@@ -33,7 +33,8 @@ COUNTRIES_API = "https://restcountries.com/v3.1/name"
 
 def get_country_data(location):
     """
-    Gets real country information from REST Countries API.
+    Gets country information from REST Countries API.
+    Safely handles invalid locations and API errors.
     """
 
     location = location.strip()
@@ -47,37 +48,78 @@ def get_country_data(location):
             timeout=10
         )
 
-        if response.status_code == 200:
-            data = response.json()[0]
+        # API must return HTTP 200
+        if response.status_code != 200:
+            return None
 
-            name = data.get("name", {}).get("common", location)
-            population = data.get("population", 0)
-            region = data.get("region", "Unknown")
+        data = response.json()
 
-            currencies = data.get("currencies", {})
+        # Make sure the API actually returned a list
+        if not isinstance(data, list) or len(data) == 0:
+            return None
 
-            if currencies:
-                currency_code = list(currencies.keys())[0]
-                currency_symbol = currencies[currency_code].get(
+        country = data[0]
+
+        # Make sure the first item is a dictionary
+        if not isinstance(country, dict):
+            return None
+
+        name_data = country.get("name", {})
+
+        if not isinstance(name_data, dict):
+            name_data = {}
+
+        name = name_data.get(
+            "common",
+            location.title()
+        )
+
+        population = country.get(
+            "population",
+            0
+        )
+
+        region = country.get(
+            "region",
+            "Unknown"
+        )
+
+        currencies = country.get(
+            "currencies",
+            {}
+        )
+
+        currency_code = "USD"
+        currency_symbol = "$"
+
+        if isinstance(currencies, dict) and currencies:
+
+            currency_code = list(
+                currencies.keys()
+            )[0]
+
+            currency_info = currencies.get(
+                currency_code,
+                {}
+            )
+
+            if isinstance(currency_info, dict):
+
+                currency_symbol = currency_info.get(
                     "symbol",
                     currency_code
                 )
-            else:
-                currency_code = "USD"
-                currency_symbol = "$"
 
-            return {
-                "name": name,
-                "population": population,
-                "region": region,
-                "currency_code": currency_code,
-                "currency_symbol": currency_symbol
-            }
+        return {
+            "name": name,
+            "population": population,
+            "region": region,
+            "currency_code": currency_code,
+            "currency_symbol": currency_symbol
+        }
 
-    except requests.RequestException:
-        pass
-
-    return None
+    except (requests.RequestException, ValueError, TypeError):
+        return None
 
 
 # ============================================================
