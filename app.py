@@ -76,8 +76,8 @@ brand_pool = {
             "nissan", "subaru", "suzuki", "seat", "skoda"
         ]
     }
-  sampled_makes = brand_pool.get(body_type, ["bmw", "audi"])
-  random.shuffle(sampled_makes)
+sampled_makes = brand_pool.get(body_type, ["bmw", "audi"])
+random.shuffle(sampled_makes)
 
   for make_name in sampled_makes:
     try:
