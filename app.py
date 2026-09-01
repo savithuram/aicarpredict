@@ -686,19 +686,18 @@ with customer_tab:
         )
 
         preferred_brand = st.selectbox(
-    "🏷️ Preferred Brand",
-    [
-        "Mazda",
-        "Toyota",
-        "Honda",
-        "BMW",
-        "Mercedes-Benz",
-        "Ford",
-        "Hyundai",
-        "Kia",
-        "Volkswagen"
-    ]
-)
+            "🏷️ Preferred Brand",
+            [
+                "Mazda",
+                "Toyota",
+                "Honda",
+                "BMW",
+                "Mercedes-Benz",
+                "Ford",
+                "Hyundai",
+                "Kia",
+                "Volkswagen"
+            ]
         )
 
         st.write("")
@@ -803,8 +802,8 @@ with customer_tab:
             )
 
             st.write(
-                "Try removing the brand/model filter "
-                "or selecting another body type."
+                "Try selecting another brand, "
+                "body type, or fuel type."
             )
 
 
@@ -868,9 +867,7 @@ with company_tab:
             "Collecting vehicle data..."
         ):
 
-            # FIX:
-            # Manufacturer search does not have a brand.
-            # Therefore explicitly pass an empty brand.
+            # Manufacturer search does not use a brand.
             segment_cars, error = get_cars(
                 company_segment,
                 "Any",
