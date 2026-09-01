@@ -21,7 +21,10 @@ st.caption("Smart Automotive Recommendation & Market Analysis")
 # API CONFIGURATION
 # ============================================================
 
-API_KEY = os.getenv("API_NINJAS_KEY")
+API_KEY = st.secrets.get(
+    "API_NINJAS_KEY",
+    os.getenv("API_NINJAS_KEY")
+)
 
 CARS_API = "https://api.api-ninjas.com/v1/cars"
 COUNTRIES_API = "https://restcountries.com/v3.1/name"
@@ -30,11 +33,9 @@ COUNTRIES_API = "https://restcountries.com/v3.1/name"
 # ============================================================
 # HELPER FUNCTIONS
 # ============================================================
-
 def get_country_data(location):
     """
     Gets country information from REST Countries API.
-    Safely handles invalid locations and API errors.
     """
 
     location = location.strip()
@@ -48,19 +49,19 @@ def get_country_data(location):
             timeout=10
         )
 
-        # API must return HTTP 200
         if response.status_code != 200:
             return None
 
         data = response.json()
 
-        # Make sure the API actually returned a list
-        if not isinstance(data, list) or len(data) == 0:
+        if not isinstance(data, list):
+            return None
+
+        if len(data) == 0:
             return None
 
         country = data[0]
 
-        # Make sure the first item is a dictionary
         if not isinstance(country, dict):
             return None
 
@@ -118,9 +119,8 @@ def get_country_data(location):
             "currency_symbol": currency_symbol
         }
 
-    except (requests.RequestException, ValueError, TypeError):
+    except Exception:
         return None
-
 
 # ============================================================
 # CAR API
