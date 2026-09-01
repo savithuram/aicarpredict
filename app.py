@@ -46,12 +46,6 @@ def get_cars(body_type, fuel_type, brand=""):
         "Accept": "application/json"
     }
 
-    # VehDB requires at least one of:
-    # make, model, year, or q.
-    #
-    # We use q="car" when no brand is supplied.
-    # Maximum per_page for the current request is 10.
-
     params = {
         "year_min": 2023,
         "per_page": 10
@@ -115,10 +109,6 @@ def get_cars(body_type, fuel_type, brand=""):
 
             return [], None
 
-        # ----------------------------------------------------
-        # API ERROR
-        # ----------------------------------------------------
-
         try:
 
             error_data = response.json()
@@ -170,7 +160,6 @@ def clean_car_list(cars):
 
         year = get_car_year(car)
 
-        # Ignore old or invalid records
         if year < 2023:
             continue
 
@@ -203,7 +192,6 @@ def clean_car_list(cars):
 
         cleaned.append(car)
 
-    # Newest vehicles first
     cleaned.sort(
         key=lambda x: x["_year"],
         reverse=True
@@ -221,12 +209,6 @@ def calculate_vehicle_score(
     preferred_brand,
     budget
 ):
-    """
-    Transparent recommendation score.
-
-    The score uses actual vehicle information
-    returned by VehDB.
-    """
 
     score = 0
     reasons = []
@@ -370,10 +352,6 @@ def calculate_vehicle_score(
         reasons.append(
             "Engine specification available"
         )
-
-    # --------------------------------------------------------
-    # NORMALIZE SCORE
-    # --------------------------------------------------------
 
     score = min(score, 100)
 
@@ -879,9 +857,13 @@ with company_tab:
             "Collecting vehicle data..."
         ):
 
+            # FIX:
+            # Manufacturer search does not have a brand.
+            # Therefore explicitly pass an empty brand.
             segment_cars, error = get_cars(
                 company_segment,
-                "Any"
+                "Any",
+                ""
             )
 
         # ----------------------------------------------------
@@ -903,6 +885,11 @@ with company_tab:
         if error:
 
             st.error(error)
+
+            st.info(
+                "The manufacturer analysis uses the same "
+                "VehDB connection as the customer portal."
+            )
 
         # ----------------------------------------------------
         # VEHICLE DATA
@@ -949,7 +936,9 @@ with company_tab:
 
                     if year:
 
-                        years.append(year)
+                        years.append(
+                            year
+                        )
 
                     fuel = car.get(
                         "fuel_type_name"
@@ -1167,6 +1156,11 @@ with company_tab:
 
             st.warning(
                 "No vehicle data was returned."
+            )
+
+            st.info(
+                "Try another vehicle segment such as "
+                "SUV or Sedan."
             )
 
 
