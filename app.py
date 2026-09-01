@@ -89,7 +89,7 @@ for make_name in sampled_makes:
     except Exception:
       continue
 
-  return []
+return []
 
 def fetch_market_data(location: str):
     curr = get_currency_config(location)
