@@ -48,7 +48,7 @@ def get_cars(body_type, fuel_type, brand=""):
 
     # VehDB requires at least one base filter.
     # We use year_min so that we get modern vehicles.
-     params = {
+    params = {
     "year_min": 2023,
     "per_page": 10
     }
