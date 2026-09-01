@@ -47,7 +47,7 @@ with tab1:
             match_score = "95%"
             reasons = [
                 f"High demand turnover in {c_location}: Market Days Supply is down to {data['days_supply']['EV']} days.",
-                f"Your budget (${c_budget:,.0f}) comfortably covers regional EV price averages (${avg_cost:,.0f}).",
+                f"Your budget (\${c_budget:,.0f}) comfortably covers regional EV price averages (${avg_cost:,.0f}).",
                 "High density of local public charging infrastructure in your city."
             ]
         elif c_type == "SUV" and c_budget >= 28000:
