@@ -126,16 +126,9 @@ def get_country_data(location):
 # CAR API
 # ============================================================
 
-def get_cars(
-    body_type,
-    fuel_type,
-    brand=""
-):
+def get_cars(body_type, fuel_type, brand=""):
     """
-    Gets cars from API Ninjas.
-
-    We deliberately use a recent minimum year so that
-    old cars are not returned unnecessarily.
+    Fetch modern vehicles from API Ninjas.
     """
 
     if not API_KEY:
@@ -145,21 +138,14 @@ def get_cars(
         "X-Api-Key": API_KEY
     }
 
-    # Current year range for modern vehicles
+    # IMPORTANT:
+    # The v1 API uses these parameter names.
     params = {
         "min_year": 2023,
         "limit": 10
     }
 
-    # Body type
-    if body_type:
-        params["type"] = body_type.lower()
-
-    # Fuel type
-    if fuel_type and fuel_type != "Any":
-        params["fuel_type"] = fuel_type.lower()
-
-    # Optional brand
+    # Brand/model search
     if brand.strip():
         params["make"] = brand.strip().lower()
 
@@ -181,22 +167,22 @@ def get_cars(
 
             return [], None
 
-        if response.status_code == 401:
-            return None, "API key is invalid."
-
-        if response.status_code == 403:
-            return None, "Your API plan does not allow this request."
-
-        if response.status_code == 429:
-            return None, "API request limit reached."
-
-        return None, f"API error: {response.status_code}"
+        # Show the actual API error
+        try:
+            error_data = response.json()
+            return None, (
+                f"API error {response.status_code}: "
+                f"{error_data}"
+            )
+        except ValueError:
+            return None, (
+                f"API error {response.status_code}: "
+                f"{response.text}"
+            )
 
     except requests.RequestException as error:
 
         return None, f"Network error: {error}"
-
-
 # ============================================================
 # CLEAN CAR DATA
 # ============================================================
