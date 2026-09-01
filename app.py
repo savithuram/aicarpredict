@@ -21,61 +21,75 @@ def get_currency_config(location: str):
 
 # Fetch dynamic car listings from API Ninjas Cars API with multi-year fallback logic
 def fetch_cars_from_api(body_type: str, user_input: str = ""):
-    api_key = "nPREL0WvyEN6gnpkLQtIydPlzpw5F8kPUO1MimRC"
-    url = "https://api.api-ninjas.com/v1/cars"
-    headers = {"X-Api-Key": api_key}
-    
-    clean_input = user_input.strip().lower()
-    years_to_try = [2022, 2020, 2018, 2015]
-    
-    # 1. Search user input as MAKE (e.g., BMW, Porsche, Ferrari, Maruti)
-    if clean_input:
-        for year in years_to_try:
-            try:
-                res = requests.get(url, headers=headers, params={"make": clean_input, "year": year, "limit": 10})
-                if res.status_code == 200 and res.json():
-                    return res.json()
-            except Exception:
-                pass
-                
-        # 2. Search user input as MODEL (e.g., 330i, M3, Huracan, Swift, Civic)
-        for year in years_to_try:
-            try:
-                res = requests.get(url, headers=headers, params={"model": clean_input, "year": year, "limit": 10})
-                if res.status_code == 200 and res.json():
-                    return res.json()
-            except Exception:
-                pass
+  # 1. Replace with the key copied from https://api-ninjas.com/profile
+  api_key = "nPREL0WvyEN6gnpkLQtIydPlzpw5F8kPUO1MimRC"
+  url = "https://api.api-ninjas.com/v1/cars"
+  headers = {"X-Api-Key": api_key}
+  clean_input = user_input.strip().lower()
 
-        # 3. Try without year parameter as a final attempt
-        try:
-            res = requests.get(url, headers=headers, params={"make": clean_input, "limit": 10})
-            if res.status_code == 200 and res.json():
-                return res.json()
-        except Exception:
-            pass
+  if clean_input:
+    # Try searching by MAKE (e.g. bmw, porsche, maruti)
+    try:
+      res = requests.get(
+          url, headers=headers, params={"make": clean_input, "limit": 10}
+      )
+      if res.status_code == 200 and res.json():
+        return res.json()
+      elif res.status_code != 200:
+        st.error(f"API Error ({res.status_code}): {res.text}")
+    except Exception as e:
+      st.error(f"Request failed: {e}")
 
-    # 4. Fallback pool if input is blank or unmatched
-    brand_pool = {
-        "SUV": ["bmw", "porsche", "audi", "mercedes-benz", "land rover", "maruti", "hyundai", "jeep"],
-        "EV": ["porsche", "tesla", "bmw", "audi", "mercedes-benz", "hyundai", "kia"],
-        "Sedan": ["bmw", "mercedes-benz", "audi", "porsche", "bentley", "maserati", "honda", "toyota"],
-        "Hatchback": ["mini", "volkswagen", "maruti", "audi", "mercedes-benz", "bmw", "ford"]
+    # Try searching by MODEL (e.g. 330i, m3, civic)
+    try:
+      res = requests.get(
+          url, headers=headers, params={"model": clean_input, "limit": 10}
+      )
+      if res.status_code == 200 and res.json():
+        return res.json()
+    except Exception:
+      pass
+
+  # Fallback brand pool when no user query is entered
+brand_pool = {
+        "SUV": [
+            "toyota", "honda", "ford", "chevrolet", "jeep", "nissan", "hyundai", "kia", 
+            "subaru", "mazda", "bmw", "mercedes-benz", "audi", "porsche", "land rover", 
+            "volvo", "lexus", "acura", "infiniti", "cadillac", "gmc", "lincoln", "dodge", 
+            "maruti", "tata", "mahindra", "lamborghini", "ferrari", "bentley", "aston martin", 
+            "maserati", "volkswagen", "alfa romeo", "mitsubishi"
+        ],
+        "EV": [
+            "tesla", "porsche", "bmw", "audi", "mercedes-benz", "hyundai", "kia", "nissan", 
+            "volkswagen", "polestar", "lucid", "rivian", "byd", "ford", "chevrolet", 
+            "volvo", "cadillac", "jaguar", "genesis", "fiat", "tata"
+        ],
+        "Sedan": [
+            "toyota", "honda", "nissan", "hyundai", "kia", "bmw", "mercedes-benz", "audi", 
+            "lexus", "volkswagen", "subaru", "mazda", "volvo", "genesis", "cadillac", 
+            "jaguar", "alfa romeo", "porsche", "maserati", "bentley", "rolls-royce", 
+            "dodge", "chrysler", "maruti", "tata", "aston martin"
+        ],
+        "Hatchback": [
+            "volkswagen", "mini", "honda", "toyota", "maruti", "hyundai", "kia", "ford", 
+            "audi", "bmw", "mercedes-benz", "peugeot", "renault", "fiat", "mazda", 
+            "nissan", "subaru", "suzuki", "seat", "skoda"
+        ]
     }
-    
-    sampled_makes = brand_pool.get(body_type, ["bmw", "porsche", "audi", "mercedes-benz"])
-    random.shuffle(sampled_makes)
-    
-    for make_name in sampled_makes:
-        for yr in [2020, 2018]:
-            try:
-                res = requests.get(url, headers=headers, params={"make": make_name, "year": yr, "limit": 10})
-                if res.status_code == 200 and res.json():
-                    return res.json()
-            except Exception:
-                continue
+  sampled_makes = brand_pool.get(body_type, ["bmw", "audi"])
+  random.shuffle(sampled_makes)
 
-    return []
+  for make_name in sampled_makes:
+    try:
+      res = requests.get(
+          url, headers=headers, params={"make": make_name, "limit": 10}
+      )
+      if res.status_code == 200 and res.json():
+        return res.json()
+    except Exception:
+      continue
+
+  return []
 
 def fetch_market_data(location: str):
     curr = get_currency_config(location)
