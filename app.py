@@ -685,9 +685,20 @@ with customer_tab:
             ]
         )
 
-        preferred_brand = st.text_input(
-            "🏷️ Preferred Brand / Model",
-            placeholder="BMW, Toyota, Honda..."
+        preferred_brand = st.selectbox(
+    "🏷️ Preferred Brand",
+    [
+        "Mazda",
+        "Toyota",
+        "Honda",
+        "BMW",
+        "Mercedes-Benz",
+        "Ford",
+        "Hyundai",
+        "Kia",
+        "Volkswagen"
+    ]
+)
         )
 
         st.write("")
