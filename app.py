@@ -124,9 +124,7 @@ def get_cars(body_type, fuel_type, brand=""):
 
     # IMPORTANT:
     # The v1 API uses these parameter names.
-    params = {
-        "min_year": 2023,
-    }
+    params = {}
 
     # Brand/model search
     if brand.strip():
