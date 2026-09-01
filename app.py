@@ -20,21 +20,23 @@ def get_currency_config(location: str):
 
 # Fetch market data (Integration point for real-time APIs like MarketCheck or CarAPI)
 def fetch_market_data(location: str):
-    curr = get_currency_config(location)
-    rate = curr["rate"]
-    loc = location.lower().strip()
+    api_key = "nPREL0WvyEN6gnpkLQtIydPlzpw5F8kPUO1MimRC"
+    # Example using MarketCheck active search API
+    url = f"https://api.marketcheck.com/v2/search/car/active?zip={location}&api_key={api_key}"
     
-    # Scale base price benchmarks to local currency
-    base_prices = {"SUV": 34000, "Sedan": 22000, "EV": 41000, "Hatchback": 18000}
-    local_prices = {k: int(v * rate) for k, v in base_prices.items()}
-    
+    try:
+        response = requests.get(https://api.api-ninjas.com/v1/cars](https://api.api-ninjas.com/v1/cars)
+        if response.status_code == 200:
+            return response.json()  # Returns live dealer inventory and market supply
+    except Exception as e:
+        pass
+        
+    # Fallback to defaults if key is missing or offline
     return {
         "location": location,
-        "currency_symbol": curr["symbol"],
-        "available_units": 1850 if any(term in loc for term in ["york", "ny", "london", "mumbai", "delhi"]) else 920,
-        "avg_price": local_prices,
-        "days_supply": {"SUV": 28, "Sedan": 42, "EV": 14, "Hatchback": 50},
-        "market_share": {"SUV": "48%", "Sedan": "28%", "EV": "18%", "Hatchback": "6%"}
+        "avg_price": {"SUV": 34000, "EV": 41000, "Sedan": 22000, "Hatchback": 18000},
+        "days_supply": {"SUV": 28, "EV": 14, "Sedan": 42, "Hatchback": 50},
+        "market_share": {"SUV": "48%", "EV": "18%", "Sedan": "28%", "Hatchback": "6%"}
     }
 
 # Navigation tabs
