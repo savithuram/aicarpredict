@@ -88,7 +88,7 @@ with tab2:
         success_rate = "88%"
         reasons = [
             f"**High Supply Deficit:** EV Market Days Supply in {s_location} is low ({s_data['days_supply']['EV']} days), meaning consumer purchases outpace dealer stock.",
-            f"**Price Vacuum:** Regional average EV price is high (${s_data['avg_price']['EV']:,.0f}), leaving a wide opening for an affordable sub-$32k competitor.",
+            f"**Price Vacuum:** Regional average EV price is high (\${s_data['avg_price']['EV']:,.0f}), leaving a wide opening for an affordable sub-$32k competitor.",
             f"**Body Style Dominance:** SUV body styles lead sales with {s_data['market_share']['SUV']} share, making a Compact EV SUV the highest probability entry model."
         ]
 
