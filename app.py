@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+import random
 
 st.set_page_config(page_title="AutoPulse Analytics", page_icon="🚗", layout="wide")
 
@@ -18,49 +19,59 @@ def get_currency_config(location: str):
     else:
         return {"symbol": "$", "rate": 1.0}
 
-# Fetch market data from API Ninjas Cars API
-def fetch_market_data(location: str):
+# Fetch dynamic car listings from API Ninjas Cars API across all global makes & models
+def fetch_cars_from_api(body_type: str, user_input: str = ""):
     api_key = "nPREL0WvyEN6gnpkLQtIydPlzpw5F8kPUO1MimRC"
     url = "https://api.api-ninjas.com/v1/cars"
+    headers = {"X-Api-Key": api_key}
     
-    headers = {
-        "X-Api-Key": api_key
-    }
-    params = {
-        "model": "SUV",
-        "limit": 10
+    clean_input = user_input.strip().lower()
+    
+    # 1. If user typed a specific Brand or Model (e.g. BMW, Lamborghini, Maruti, Ferrari, M3, Huracan)
+    if clean_input:
+        # Try searching by MAKE first
+        try:
+            res = requests.get(url, headers=headers, params={"make": clean_input, "limit": 10})
+            if res.status_code == 200 and res.json():
+                return res.json()
+        except Exception:
+            pass
+            
+        # If no make matches, try searching by MODEL
+        try:
+            res = requests.get(url, headers=headers, params={"model": clean_input, "limit": 10})
+            if res.status_code == 200 and res.json():
+                return res.json()
+        except Exception:
+            pass
+
+    # 2. Global fallback pool spanning Supercars, Luxury, Performance, and Mass-Market brands
+    brand_pool = {
+        "SUV": ["lamborghini", "porsche", "bmw", "audi", "mercedes-benz", "land rover", "maruti", "tata", "hyundai", "jeep", "cadillac", "ferrari"],
+        "EV": ["porsche", "tesla", "bmw", "audi", "mercedes-benz", "hyundai", "kia", "byd", "lucid"],
+        "Sedan": ["bmw", "mercedes-benz", "audi", "porsche", "bentley", "rolls-royce", "maserati", "maruti", "alfa romeo", "honda", "toyota"],
+        "Hatchback": ["mini", "volkswagen", "maruti", "audi", "mercedes-benz", "bmw", "hyundai", "ford"]
     }
     
+    sampled_makes = brand_pool.get(body_type, ["bmw", "porsche", "lamborghini", "maruti", "audi"])
+    random.shuffle(sampled_makes)
+    
+    for make_name in sampled_makes:
+        try:
+            res = requests.get(url, headers=headers, params={"make": make_name, "limit": 10})
+            if res.status_code == 200 and res.json():
+                return res.json()
+        except Exception:
+            continue
+
+    return []
+
+def fetch_market_data(location: str):
     curr = get_currency_config(location)
     rate = curr["rate"]
-    
-    try:
-        response = requests.get(url, headers=headers, params=params)
-        if response.status_code == 200:
-            car_data = response.json()
-            if car_data:
-                return {
-                    "location": location,
-                    "currency_symbol": curr["symbol"],
-                    "available_units": len(car_data) * 120,
-                    "avg_price": {
-                        "SUV": int(34000 * rate),
-                        "EV": int(41000 * rate),
-                        "Sedan": int(22000 * rate),
-                        "Hatchback": int(18000 * rate)
-                    },
-                    "days_supply": {"SUV": 28, "EV": 14, "Sedan": 42, "Hatchback": 50},
-                    "market_share": {"SUV": "48%", "EV": "18%", "Sedan": "28%", "Hatchback": "6%"},
-                    "raw_api_data": car_data
-                }
-    except Exception as e:
-        pass
-
-    # Fallback data dictionary (ensures app won't crash if API fails)
     return {
         "location": location,
         "currency_symbol": curr["symbol"],
-        "available_units": 920,
         "avg_price": {
             "SUV": int(34000 * rate),
             "EV": int(41000 * rate),
@@ -77,7 +88,7 @@ tab1, tab2 = st.tabs(["👤 Customer Portal", "🏢 Startup Manufacturer Portal"
 # --- CUSTOMER PORTAL ---
 with tab1:
     st.header("Find Your Ideal Vehicle Match")
-    st.write("Enter your location and target budget to query real-time market inventory.")
+    st.write("Enter your location, budget, and brand preference to query global car databases.")
     
     col1, col2 = st.columns(2)
     with col1:
@@ -88,42 +99,43 @@ with tab1:
         c_budget = st.number_input(f"Maximum Budget ({c_currency})", value=default_budget, step=budget_step)
     with col2:
         c_type = st.selectbox("Preferred Body Type", ["SUV", "EV", "Sedan", "Hatchback"])
-        c_model = st.text_input("Preferred Model (Optional)", placeholder="e.g. RAV4, Model Y, Nexon")
+        c_brand_model = st.text_input("Preferred Brand / Model (Optional)", placeholder="e.g. BMW, Lamborghini, Maruti, Ferrari, Porsche, Huracan")
 
     if st.button("Predict Best Vehicle Fit", type="primary"):
-        data = fetch_market_data(c_location)
-        sym = data["currency_symbol"]
-        avg_cost = data["avg_price"].get(c_type, 30000)
+        market_info = fetch_market_data(c_location)
+        api_cars = fetch_cars_from_api(c_type, c_brand_model)
+        sym = market_info["currency_symbol"]
+        avg_cost = market_info["avg_price"].get(c_type, 30000)
         
-        # Recommendation logic consuming currency-scaled parameters
-        if c_type == "EV" and c_budget >= (30000 * get_currency_config(c_location)["rate"]):
-            rec_car = "Tesla Model Y / Hyundai Ioniq 5 / Tata Nexon EV"
-            match_score = "95%"
-            reasons = [
-                f"High demand turnover in {c_location}: Market Days Supply is down to {data['days_supply']['EV']} days.",
-                f"Your budget ({sym}{c_budget:,.0f}) comfortably covers regional EV price averages ({sym}{avg_cost:,.0f}).",
-                "High density of local public charging infrastructure in your region."
-            ]
-        elif c_type == "SUV" and c_budget >= (22000 * get_currency_config(c_location)["rate"]):
-            rec_car = "Toyota RAV4 / Mazda CX-5 / Hyundai Creta"
-            match_score = "92%"
-            reasons = [
-                f"SUVs command {data['market_share']['SUV']} of active buyer market share in {c_location}.",
-                f"Fits within regional price average ({sym}{avg_cost:,.0f}) with strong dealer inventory.",
-                "High liquidity for resale and optimal local road compatibility."
-            ]
+        st.subheader("🚗 Live Vehicle Results from Global API Database")
+        
+        if api_cars:
+            for i, car in enumerate(api_cars[:5], 1):
+                make = car.get("make", "Generic").title()
+                model = car.get("model", "Vehicle").title()
+                year = car.get("year", "2023")
+                transmission = "Automatic" if car.get("transmission") == "a" else "Manual"
+                drive = car.get("drive", "fwd").upper()
+                fuel = car.get("fuel_type", "gas").title()
+                cylinders = car.get("cylinders", "N/A")
+                city_mpg = car.get("city_mpg", "N/A")
+                
+                st.success(f"**Option {i}: {year} {make} {model}**")
+                st.write(f"• **Drive & Transmission:** {drive} | {transmission}")
+                st.write(f"• **Fuel Type & Engine:** {fuel} | {cylinders} Cylinders")
+                st.write(f"• **City Mileage:** {city_mpg} MPG")
+                st.write(f"• **Estimated Market Benchmark:** {sym}{avg_cost:,.0f}")
+                st.write("---")
         else:
-            rec_car = "Honda Civic / Toyota Corolla / Maruti Swift"
-            match_score = "89%"
-            reasons = [
-                f"Optimal utility-to-cost ratio for your {sym}{c_budget:,.0f} budget limit.",
-                "Strong dealer availability ensures competitive pricing and immediate delivery.",
-                "Low average operational and maintenance costs in this region."
-            ]
+            st.warning(f"No specific matches found for '{c_brand_model}'. Try searching by Brand name (e.g. BMW, Lamborghini, Maruti, Ferrari, Porsche).")
 
-        st.success(f"**Recommended Vehicle:** {rec_car}")
-        st.metric(label="Match Confidence", value=match_score)
-        
+        reasons = [
+            f"Queries live vehicle records for {c_type} models across global manufacturer databases.",
+            f"Fits within or near your target budget of {sym}{c_budget:,.0f} against regional {c_type} price baselines ({sym}{avg_cost:,.0f}).",
+            f"Regional market demand metric: Market Days Supply for {c_type}s in {c_location} is {market_info['days_supply'].get(c_type, 30)} days.",
+            f"The {c_type} body style holds {market_info['market_share'].get(c_type, '25%')} market share in {c_location}."
+        ]
+
         st.subheader("💡 Why This Was Predicted")
         for r in reasons:
             st.markdown(f"- {r}")
