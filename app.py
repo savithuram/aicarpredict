@@ -48,10 +48,19 @@ def get_cars(body_type, fuel_type, brand=""):
 
     # VehDB requires at least one base filter.
     # We use year_min so that we get modern vehicles.
-    params = {
-        "year_min": 2023,
-        "per_page": 25
-    }
+     params = {
+    "year_min": 2023,
+    "per_page": 10
+}
+
+# VehDB requires a base filter.
+# If the user entered a brand, use it.
+if brand.strip():
+    params["make"] = brand.strip()
+
+# Otherwise use a broad search term.
+else:
+    params["q"] = "car"
 
     # Body type
     if body_type and body_type != "Any":
@@ -72,8 +81,7 @@ def get_cars(body_type, fuel_type, brand=""):
             params["fuel_type"] = "HYBRID"
 
     # Brand/model
-    if brand.strip():
-        params["make"] = brand.strip()
+    
 
     try:
 
