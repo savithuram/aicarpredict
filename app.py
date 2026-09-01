@@ -19,50 +19,61 @@ def get_currency_config(location: str):
     else:
         return {"symbol": "$", "rate": 1.0}
 
-# Fetch dynamic car listings from API Ninjas Cars API across all global makes & models
+# Fetch dynamic car listings from API Ninjas Cars API with multi-year fallback logic
 def fetch_cars_from_api(body_type: str, user_input: str = ""):
     api_key = "nPREL0WvyEN6gnpkLQtIydPlzpw5F8kPUO1MimRC"
     url = "https://api.api-ninjas.com/v1/cars"
     headers = {"X-Api-Key": api_key}
     
     clean_input = user_input.strip().lower()
+    years_to_try = [2022, 2020, 2018, 2015]
     
-    # 1. If user typed a specific Brand or Model (e.g. BMW, Lamborghini, Maruti, Ferrari, M3, Huracan)
+    # 1. Search user input as MAKE (e.g., BMW, Porsche, Ferrari, Maruti)
     if clean_input:
-        # Try searching by MAKE first
+        for year in years_to_try:
+            try:
+                res = requests.get(url, headers=headers, params={"make": clean_input, "year": year, "limit": 10})
+                if res.status_code == 200 and res.json():
+                    return res.json()
+            except Exception:
+                pass
+                
+        # 2. Search user input as MODEL (e.g., 330i, M3, Huracan, Swift, Civic)
+        for year in years_to_try:
+            try:
+                res = requests.get(url, headers=headers, params={"model": clean_input, "year": year, "limit": 10})
+                if res.status_code == 200 and res.json():
+                    return res.json()
+            except Exception:
+                pass
+
+        # 3. Try without year parameter as a final attempt
         try:
             res = requests.get(url, headers=headers, params={"make": clean_input, "limit": 10})
             if res.status_code == 200 and res.json():
                 return res.json()
         except Exception:
             pass
-            
-        # If no make matches, try searching by MODEL
-        try:
-            res = requests.get(url, headers=headers, params={"model": clean_input, "limit": 10})
-            if res.status_code == 200 and res.json():
-                return res.json()
-        except Exception:
-            pass
 
-    # 2. Global fallback pool spanning Supercars, Luxury, Performance, and Mass-Market brands
+    # 4. Fallback pool if input is blank or unmatched
     brand_pool = {
-        "SUV": ["lamborghini", "porsche", "bmw", "audi", "mercedes-benz", "land rover", "maruti", "tata", "hyundai", "jeep", "cadillac", "ferrari"],
-        "EV": ["porsche", "tesla", "bmw", "audi", "mercedes-benz", "hyundai", "kia", "byd", "lucid"],
-        "Sedan": ["bmw", "mercedes-benz", "audi", "porsche", "bentley", "rolls-royce", "maserati", "maruti", "alfa romeo", "honda", "toyota"],
-        "Hatchback": ["mini", "volkswagen", "maruti", "audi", "mercedes-benz", "bmw", "hyundai", "ford"]
+        "SUV": ["bmw", "porsche", "audi", "mercedes-benz", "land rover", "maruti", "hyundai", "jeep"],
+        "EV": ["porsche", "tesla", "bmw", "audi", "mercedes-benz", "hyundai", "kia"],
+        "Sedan": ["bmw", "mercedes-benz", "audi", "porsche", "bentley", "maserati", "honda", "toyota"],
+        "Hatchback": ["mini", "volkswagen", "maruti", "audi", "mercedes-benz", "bmw", "ford"]
     }
     
-    sampled_makes = brand_pool.get(body_type, ["bmw", "porsche", "lamborghini", "maruti", "audi"])
+    sampled_makes = brand_pool.get(body_type, ["bmw", "porsche", "audi", "mercedes-benz"])
     random.shuffle(sampled_makes)
     
     for make_name in sampled_makes:
-        try:
-            res = requests.get(url, headers=headers, params={"make": make_name, "limit": 10})
-            if res.status_code == 200 and res.json():
-                return res.json()
-        except Exception:
-            continue
+        for yr in [2020, 2018]:
+            try:
+                res = requests.get(url, headers=headers, params={"make": make_name, "year": yr, "limit": 10})
+                if res.status_code == 200 and res.json():
+                    return res.json()
+            except Exception:
+                continue
 
     return []
 
