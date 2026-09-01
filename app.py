@@ -46,28 +46,39 @@ def get_cars(body_type, fuel_type, brand=""):
         "Accept": "application/json"
     }
 
-    # VehDB requires at least one base filter.
-    # We use year_min so that we get modern vehicles.
+    # VehDB requires at least one of:
+    # make, model, year, or q.
+    #
+    # We use q="car" when no brand is supplied.
+    # Maximum per_page for the current request is 10.
+
     params = {
-    "year_min": 2023,
-    "per_page": 10
+        "year_min": 2023,
+        "per_page": 10
     }
 
-# VehDB requires a base filter.
-# If the user entered a brand, use it.
-if brand.strip():
-    params["make"] = brand.strip()
+    # --------------------------------------------------------
+    # BASE SEARCH FILTER
+    # --------------------------------------------------------
 
-# Otherwise use a broad search term.
-else:
-    params["q"] = "car"
+    if brand.strip():
+        params["make"] = brand.strip()
+    else:
+        params["q"] = "car"
 
-    # Body type
+    # --------------------------------------------------------
+    # BODY TYPE
+    # --------------------------------------------------------
+
     if body_type and body_type != "Any":
         params["body"] = body_type
 
-    # Fuel type
+    # --------------------------------------------------------
+    # FUEL TYPE
+    # --------------------------------------------------------
+
     if fuel_type and fuel_type != "Any":
+
         if fuel_type == "Gas":
             params["fuel_type"] = "GASOLINE"
 
@@ -80,8 +91,9 @@ else:
         elif fuel_type == "Hybrid":
             params["fuel_type"] = "HYBRID"
 
-    # Brand/model
-    
+    # --------------------------------------------------------
+    # API REQUEST
+    # --------------------------------------------------------
 
     try:
 
@@ -96,11 +108,6 @@ else:
 
             result = response.json()
 
-            # VehDB returns:
-            # {
-            #     "data": [...]
-            # }
-
             cars = result.get("data", [])
 
             if isinstance(cars, list):
@@ -108,7 +115,10 @@ else:
 
             return [], None
 
-        # API error
+        # ----------------------------------------------------
+        # API ERROR
+        # ----------------------------------------------------
+
         try:
 
             error_data = response.json()
@@ -160,7 +170,7 @@ def clean_car_list(cars):
 
         year = get_car_year(car)
 
-        # Ignore old/invalid records
+        # Ignore old or invalid records
         if year < 2023:
             continue
 
@@ -193,7 +203,7 @@ def clean_car_list(cars):
 
         cleaned.append(car)
 
-    # Newest first
+    # Newest vehicles first
     cleaned.sort(
         key=lambda x: x["_year"],
         reverse=True
@@ -219,7 +229,6 @@ def calculate_vehicle_score(
     """
 
     score = 0
-
     reasons = []
 
     year = get_car_year(car)
@@ -268,7 +277,6 @@ def calculate_vehicle_score(
             "Recent production data"
         )
 
-
     # --------------------------------------------------------
     # BRAND MATCH
     # --------------------------------------------------------
@@ -301,7 +309,6 @@ def calculate_vehicle_score(
             "No brand restriction"
         )
 
-
     # --------------------------------------------------------
     # FUEL ECONOMY
     # --------------------------------------------------------
@@ -315,7 +322,6 @@ def calculate_vehicle_score(
         reasons.append(
             "EPA fuel economy data available"
         )
-
 
     # --------------------------------------------------------
     # ELECTRIC RANGE
@@ -333,7 +339,6 @@ def calculate_vehicle_score(
             "Electric driving range available"
         )
 
-
     # --------------------------------------------------------
     # DRIVE TYPE
     # --------------------------------------------------------
@@ -349,7 +354,6 @@ def calculate_vehicle_score(
         reasons.append(
             "All-wheel/four-wheel drive"
         )
-
 
     # --------------------------------------------------------
     # ENGINE DATA
@@ -367,9 +371,8 @@ def calculate_vehicle_score(
             "Engine specification available"
         )
 
-
     # --------------------------------------------------------
-    # NORMALIZE
+    # NORMALIZE SCORE
     # --------------------------------------------------------
 
     score = min(score, 100)
@@ -442,32 +445,31 @@ def display_vehicle(
         "N/A"
     )
 
-
     score, reasons = calculate_vehicle_score(
         car,
         preferred_brand,
         budget
     )
 
-
     # --------------------------------------------------------
     # TITLE
     # --------------------------------------------------------
 
-    title = f"### 🏆 #{rank} — {year} {make} {model}"
+    title = (
+        f"### 🏆 #{rank} — "
+        f"{year} {make} {model}"
+    )
 
     if trim:
         title += f" {trim}"
 
     st.markdown(title)
 
-
     # --------------------------------------------------------
-    # METRICS
+    # MAIN METRICS
     # --------------------------------------------------------
 
     col1, col2, col3, col4 = st.columns(4)
-
 
     with col1:
 
@@ -476,14 +478,12 @@ def display_vehicle(
             f"{score}/100"
         )
 
-
     with col2:
 
         st.metric(
             "Year",
             year
         )
-
 
     with col3:
 
@@ -492,7 +492,6 @@ def display_vehicle(
             body
         )
 
-
     with col4:
 
         st.metric(
@@ -500,13 +499,11 @@ def display_vehicle(
             drive
         )
 
-
     # --------------------------------------------------------
-    # DETAILS
+    # VEHICLE DETAILS
     # --------------------------------------------------------
 
     col1, col2, col3 = st.columns(3)
-
 
     with col1:
 
@@ -518,7 +515,6 @@ def display_vehicle(
             f"**Transmission:** {transmission}"
         )
 
-
     with col2:
 
         st.write(
@@ -528,7 +524,6 @@ def display_vehicle(
         st.write(
             f"**Combined Mileage:** {mpg} MPG"
         )
-
 
     with col3:
 
@@ -557,7 +552,6 @@ def display_vehicle(
             st.write(
                 "**Annual Fuel Cost:** N/A"
             )
-
 
     # --------------------------------------------------------
     # REASONS
@@ -597,11 +591,9 @@ def customer_recommendation(
         )
 
         car["_score"] = score
-
         car["_reasons"] = reasons
 
         scored_cars.append(car)
-
 
     scored_cars.sort(
         key=lambda x: (
@@ -667,12 +659,10 @@ with customer_tab:
         "them using their actual specifications."
     )
 
-
     col1, col2 = st.columns(2)
 
-
     # --------------------------------------------------------
-    # LEFT
+    # LEFT COLUMN
     # --------------------------------------------------------
 
     with col1:
@@ -682,14 +672,12 @@ with customer_tab:
             value="India"
         )
 
-
         budget = st.number_input(
             "💰 Maximum Budget (₹)",
             min_value=0,
             value=2500000,
             step=50000
         )
-
 
         body_type = st.selectbox(
             "🚗 Body Type",
@@ -702,9 +690,8 @@ with customer_tab:
             ]
         )
 
-
     # --------------------------------------------------------
-    # RIGHT
+    # RIGHT COLUMN
     # --------------------------------------------------------
 
     with col2:
@@ -720,12 +707,10 @@ with customer_tab:
             ]
         )
 
-
         preferred_brand = st.text_input(
             "🏷️ Preferred Brand / Model",
             placeholder="BMW, Toyota, Honda..."
         )
-
 
         st.write("")
 
@@ -734,9 +719,8 @@ with customer_tab:
             "from VehDB."
         )
 
-
     # --------------------------------------------------------
-    # BUTTON
+    # SEARCH BUTTON
     # --------------------------------------------------------
 
     if st.button(
@@ -755,7 +739,6 @@ with customer_tab:
                 preferred_brand
             )
 
-
         # ----------------------------------------------------
         # LOCATION
         # ----------------------------------------------------
@@ -765,7 +748,6 @@ with customer_tab:
             st.success(
                 f"📍 Target location: {location}"
             )
-
 
         # ----------------------------------------------------
         # API ERROR
@@ -780,7 +762,6 @@ with customer_tab:
                 "configured correctly in Streamlit Secrets."
             )
 
-
         # ----------------------------------------------------
         # VEHICLES
         # ----------------------------------------------------
@@ -789,14 +770,12 @@ with customer_tab:
 
             cars = clean_car_list(cars)
 
-
             if not cars:
 
                 st.warning(
                     "The API returned vehicles, but "
                     "none matched our modern-vehicle filter."
                 )
-
 
             else:
 
@@ -806,18 +785,15 @@ with customer_tab:
                     budget
                 )
 
-
                 st.subheader(
                     "🚗 Recommended Vehicles"
                 )
-
 
                 st.caption(
                     f"{len(ranked_cars)} modern vehicles "
                     "were retrieved and ranked using "
                     "vehicle specifications."
                 )
-
 
                 for i, car in enumerate(
                     ranked_cars[:5],
@@ -830,7 +806,6 @@ with customer_tab:
                         preferred_brand,
                         budget
                     )
-
 
         else:
 
@@ -859,9 +834,11 @@ with company_tab:
         "for a selected vehicle segment."
     )
 
-
     col1, col2 = st.columns(2)
 
+    # --------------------------------------------------------
+    # COMPANY LOCATION
+    # --------------------------------------------------------
 
     with col1:
 
@@ -871,6 +848,9 @@ with company_tab:
             key="company_location"
         )
 
+    # --------------------------------------------------------
+    # COMPANY SEGMENT
+    # --------------------------------------------------------
 
     with col2:
 
@@ -885,6 +865,9 @@ with company_tab:
             key="company_segment"
         )
 
+    # --------------------------------------------------------
+    # ANALYZE BUTTON
+    # --------------------------------------------------------
 
     if st.button(
         "📊 Analyze Opportunity",
@@ -901,7 +884,6 @@ with company_tab:
                 "Any"
             )
 
-
         # ----------------------------------------------------
         # TARGET MARKET
         # ----------------------------------------------------
@@ -914,7 +896,6 @@ with company_tab:
             f"Analysis location: {company_location}"
         )
 
-
         # ----------------------------------------------------
         # API ERROR
         # ----------------------------------------------------
@@ -923,6 +904,9 @@ with company_tab:
 
             st.error(error)
 
+        # ----------------------------------------------------
+        # VEHICLE DATA
+        # ----------------------------------------------------
 
         elif segment_cars:
 
@@ -930,13 +914,11 @@ with company_tab:
                 segment_cars
             )
 
-
             if segment_cars:
 
                 st.subheader(
                     "📈 Current Vehicle Landscape"
                 )
-
 
                 # ------------------------------------------------
                 # BASIC ANALYSIS
@@ -945,13 +927,9 @@ with company_tab:
                 total = len(segment_cars)
 
                 brands = set()
-
                 years = []
-
                 fuel_types = set()
-
                 drive_types = set()
-
 
                 for car in segment_cars:
 
@@ -965,17 +943,13 @@ with company_tab:
                             str(make).title()
                         )
 
-
                     year = get_car_year(
                         car
                     )
 
                     if year:
 
-                        years.append(
-                            year
-                        )
-
+                        years.append(year)
 
                     fuel = car.get(
                         "fuel_type_name"
@@ -987,7 +961,6 @@ with company_tab:
                             str(fuel)
                         )
 
-
                     drive = car.get(
                         "drive_type"
                     )
@@ -998,20 +971,17 @@ with company_tab:
                             str(drive)
                         )
 
-
                 newest_year = (
                     max(years)
                     if years
                     else "N/A"
                 )
 
-
                 # ------------------------------------------------
                 # METRICS
                 # ------------------------------------------------
 
                 a, b, c, d = st.columns(4)
-
 
                 with a:
 
@@ -1020,14 +990,12 @@ with company_tab:
                         total
                     )
 
-
                 with b:
 
                     st.metric(
                         "Manufacturers",
                         len(brands)
                     )
-
 
                 with c:
 
@@ -1036,14 +1004,12 @@ with company_tab:
                         newest_year
                     )
 
-
                 with d:
 
                     st.metric(
                         "Drive Types",
                         len(drive_types)
                     )
-
 
                 # ------------------------------------------------
                 # MANUFACTURERS
@@ -1053,12 +1019,19 @@ with company_tab:
                     "**Manufacturers represented:**"
                 )
 
-                st.write(
-                    ", ".join(
-                        sorted(brands)
-                    )
-                )
+                if brands:
 
+                    st.write(
+                        ", ".join(
+                            sorted(brands)
+                        )
+                    )
+
+                else:
+
+                    st.write(
+                        "No manufacturer information available."
+                    )
 
                 # ------------------------------------------------
                 # FUEL TYPES
@@ -1068,12 +1041,19 @@ with company_tab:
                     "**Fuel types represented:**"
                 )
 
-                st.write(
-                    ", ".join(
-                        sorted(fuel_types)
-                    )
-                )
+                if fuel_types:
 
+                    st.write(
+                        ", ".join(
+                            sorted(fuel_types)
+                        )
+                    )
+
+                else:
+
+                    st.write(
+                        "No fuel information available."
+                    )
 
                 # ------------------------------------------------
                 # EXAMPLE VEHICLES
@@ -1082,7 +1062,6 @@ with company_tab:
                 st.subheader(
                     "🔎 Example Vehicles"
                 )
-
 
                 for car in segment_cars[:5]:
 
@@ -1093,7 +1072,6 @@ with company_tab:
                         )
                     ).title()
 
-
                     model = str(
                         car.get(
                             "model",
@@ -1101,11 +1079,9 @@ with company_tab:
                         )
                     ).title()
 
-
                     year = get_car_year(
                         car
                     )
-
 
                     trim = str(
                         car.get(
@@ -1113,7 +1089,6 @@ with company_tab:
                             ""
                         )
                     ).strip()
-
 
                     if trim:
 
@@ -1129,7 +1104,6 @@ with company_tab:
                             f"{model}**"
                         )
 
-
                 # ------------------------------------------------
                 # STRATEGIC INTERPRETATION
                 # ------------------------------------------------
@@ -1138,7 +1112,6 @@ with company_tab:
                     "💡 Strategic Interpretation"
                 )
 
-
                 st.write(
                     f"The database returned "
                     f"{total} modern {company_segment} "
@@ -1146,13 +1119,11 @@ with company_tab:
                     f"{len(brands)} manufacturers."
                 )
 
-
                 st.write(
                     "This analysis describes the vehicle "
                     "landscape represented in the database. "
                     "It is not official sales or market-share data."
                 )
-
 
                 # ------------------------------------------------
                 # OPPORTUNITY
@@ -1185,14 +1156,12 @@ with company_tab:
                         f"in the retrieved dataset."
                     )
 
-
             else:
 
                 st.warning(
                     "No modern vehicles were found "
                     "for this segment."
                 )
-
 
         else:
 
