@@ -65,6 +65,8 @@ def fetch_cars_from_api(body_type: str, user_input: str = ""):
 
     clean_input = user_input.strip().lower()
 
+    target_year=2020
+
     if clean_input:
         # 1. Try searching by MAKE
         try:
