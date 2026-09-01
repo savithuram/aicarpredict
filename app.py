@@ -79,7 +79,7 @@ brand_pool = {
 sampled_makes = brand_pool.get(body_type, ["bmw", "audi"])
 random.shuffle(sampled_makes)
 
-  for make_name in sampled_makes:
+for make_name in sampled_makes:
     try:
       res = requests.get(
           url, headers=headers, params={"make": make_name, "limit": 10}
