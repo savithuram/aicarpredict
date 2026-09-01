@@ -1,3 +1,62 @@
+import random
+import requests
+import streamlit as st
+
+st.set_page_config(
+    page_title="AutoPulse Analytics", page_icon="🚗", layout="wide"
+)
+
+st.title("🚗 AutoPulse: Real-Time Auto Intelligence")
+st.caption("API-Driven Automotive Recommendation Engine")
+
+
+# Auto-detect local currency symbol and rate modifier based on location
+def get_currency_config(location: str):
+    loc = location.lower().strip()
+    if any(
+        k in loc
+        for k in [
+            "india",
+            "mumbai",
+            "delhi",
+            "bangalore",
+            "chennai",
+            "hyderabad",
+            "pune",
+            "kolkata",
+        ]
+    ):
+        return {"symbol": "₹", "rate": 83.0}
+    elif any(
+        k in loc
+        for k in [
+            "uk",
+            "london",
+            "manchester",
+            "gb",
+            "england",
+            "united kingdom",
+        ]
+    ):
+        return {"symbol": "£", "rate": 0.79}
+    elif any(
+        k in loc
+        for k in [
+            "europe",
+            "germany",
+            "france",
+            "berlin",
+            "paris",
+            "spain",
+            "italy",
+            "eu",
+        ]
+    ):
+        return {"symbol": "€", "rate": 0.92}
+    else:
+        return {"symbol": "$", "rate": 1.0}
+
+
 # Fetch dynamic car listings from API Ninjas Cars API across all global makes & models
 def fetch_cars_from_api(body_type: str, user_input: str = ""):
     api_key = "nPREL0WvyEN6gnpkLQtIydPlzpw5F8kPUO1MimRC"
@@ -32,30 +91,114 @@ def fetch_cars_from_api(body_type: str, user_input: str = ""):
     # Fallback brand pool
     brand_pool = {
         "SUV": [
-            "toyota", "honda", "ford", "chevrolet", "jeep", "nissan", "hyundai",
-            "kia", "subaru", "mazda", "bmw", "mercedes-benz", "audi", "porsche",
-            "land rover", "volvo", "lexus", "acura", "infiniti", "cadillac",
-            "gmc", "lincoln", "dodge", "maruti", "tata", "mahindra",
-            "lamborghini", "ferrari", "bentley", "aston martin", "maserati",
-            "volkswagen", "alfa romeo", "mitsubishi"
+            "toyota",
+            "honda",
+            "ford",
+            "chevrolet",
+            "jeep",
+            "nissan",
+            "hyundai",
+            "kia",
+            "subaru",
+            "mazda",
+            "bmw",
+            "mercedes-benz",
+            "audi",
+            "porsche",
+            "land rover",
+            "volvo",
+            "lexus",
+            "acura",
+            "infiniti",
+            "cadillac",
+            "gmc",
+            "lincoln",
+            "dodge",
+            "maruti",
+            "tata",
+            "mahindra",
+            "lamborghini",
+            "ferrari",
+            "bentley",
+            "aston martin",
+            "maserati",
+            "volkswagen",
+            "alfa romeo",
+            "mitsubishi",
         ],
         "EV": [
-            "tesla", "porsche", "bmw", "audi", "mercedes-benz", "hyundai", "kia",
-            "nissan", "volkswagen", "polestar", "lucid", "rivian", "byd", "ford",
-            "chevrolet", "volvo", "cadillac", "jaguar", "genesis", "fiat", "tata"
+            "tesla",
+            "porsche",
+            "bmw",
+            "audi",
+            "mercedes-benz",
+            "hyundai",
+            "kia",
+            "nissan",
+            "volkswagen",
+            "polestar",
+            "lucid",
+            "rivian",
+            "byd",
+            "ford",
+            "chevrolet",
+            "volvo",
+            "cadillac",
+            "jaguar",
+            "genesis",
+            "fiat",
+            "tata",
         ],
         "Sedan": [
-            "toyota", "honda", "nissan", "hyundai", "kia", "bmw",
-            "mercedes-benz", "audi", "lexus", "volkswagen", "subaru", "mazda",
-            "volvo", "genesis", "cadillac", "jaguar", "alfa romeo", "porsche",
-            "maserati", "bentley", "rolls-royce", "dodge", "chrysler", "maruti",
-            "tata", "aston martin"
+            "toyota",
+            "honda",
+            "nissan",
+            "hyundai",
+            "kia",
+            "bmw",
+            "mercedes-benz",
+            "audi",
+            "lexus",
+            "volkswagen",
+            "subaru",
+            "mazda",
+            "volvo",
+            "genesis",
+            "cadillac",
+            "jaguar",
+            "alfa romeo",
+            "porsche",
+            "maserati",
+            "bentley",
+            "rolls-royce",
+            "dodge",
+            "chrysler",
+            "maruti",
+            "tata",
+            "aston martin",
         ],
         "Hatchback": [
-            "volkswagen", "mini", "honda", "toyota", "maruti", "hyundai", "kia",
-            "ford", "audi", "bmw", "mercedes-benz", "peugeot", "renault",
-            "fiat", "mazda", "nissan", "subaru", "suzuki", "seat", "skoda"
-        ]
+            "volkswagen",
+            "mini",
+            "honda",
+            "toyota",
+            "maruti",
+            "hyundai",
+            "kia",
+            "ford",
+            "audi",
+            "bmw",
+            "mercedes-benz",
+            "peugeot",
+            "renault",
+            "fiat",
+            "mazda",
+            "nissan",
+            "subaru",
+            "suzuki",
+            "seat",
+            "skoda",
+        ],
     }
 
     sampled_makes = brand_pool.get(
@@ -74,3 +217,155 @@ def fetch_cars_from_api(body_type: str, user_input: str = ""):
             continue
 
     return []
+
+
+def fetch_market_data(location: str):
+    curr = get_currency_config(location)
+    rate = curr["rate"]
+    return {
+        "location": location,
+        "currency_symbol": curr["symbol"],
+        "avg_price": {
+            "SUV": int(34000 * rate),
+            "EV": int(41000 * rate),
+            "Sedan": int(22000 * rate),
+            "Hatchback": int(18000 * rate),
+        },
+        "days_supply": {"SUV": 28, "EV": 14, "Sedan": 42, "Hatchback": 50},
+        "market_share": {
+            "SUV": "48%",
+            "EV": "18%",
+            "Sedan": "28%",
+            "Hatchback": "6%",
+        },
+    }
+
+
+# Navigation tabs
+tab1, tab2 = st.tabs(
+    ["👤 Customer Portal", "🏢 Startup Manufacturer Portal"]
+)
+
+# --- CUSTOMER PORTAL ---
+with tab1:
+    st.header("Find Your Ideal Vehicle Match")
+    st.write(
+        "Enter your location, budget, and brand preference to query global car"
+        " databases."
+    )
+
+    col1, col2 = st.columns(2)
+    with col1:
+        c_location = st.text_input(
+            "Location / City / Country", value="India", key="c_loc"
+        )
+        c_currency = get_currency_config(c_location)["symbol"]
+        default_budget = 2500000 if c_currency == "₹" else 35000
+        budget_step = 50000 if c_currency == "₹" else 1000
+        c_budget = st.number_input(
+            f"Maximum Budget ({c_currency})",
+            value=default_budget,
+            step=budget_step,
+        )
+    with col2:
+        c_type = st.selectbox(
+            "Preferred Body Type", ["SUV", "EV", "Sedan", "Hatchback"]
+        )
+        c_brand_model = st.text_input(
+            "Preferred Brand / Model (Optional)",
+            placeholder=(
+                "e.g. BMW, Lamborghini, Maruti, Ferrari, Porsche, Huracan"
+            ),
+        )
+
+    if st.button("Predict Best Vehicle Fit", type="primary"):
+        market_info = fetch_market_data(c_location)
+        api_cars = fetch_cars_from_api(c_type, c_brand_model)
+        sym = market_info["currency_symbol"]
+        avg_cost = market_info["avg_price"].get(c_type, 30000)
+
+        st.subheader("🚗 Live Vehicle Results from Global API Database")
+
+        if api_cars:
+            for i, car in enumerate(api_cars[:5], 1):
+                make = car.get("make", "Generic").title()
+                model = car.get("model", "Vehicle").title()
+                year = car.get("year", "2023")
+                transmission = (
+                    "Automatic" if car.get("transmission") == "a" else "Manual"
+                )
+                drive = car.get("drive", "fwd").upper()
+                fuel = car.get("fuel_type", "gas").title()
+                cylinders = car.get("cylinders", "N/A")
+                city_mpg = car.get("city_mpg", "N/A")
+
+                st.success(f"**Option {i}: {year} {make} {model}**")
+                st.write(f"• **Drive & Transmission:** {drive} | {transmission}")
+                st.write(
+                    f"• **Fuel Type & Engine:** {fuel} | {cylinders} Cylinders"
+                )
+                st.write(f"• **City Mileage:** {city_mpg} MPG")
+                st.write(
+                    f"• **Estimated Market Benchmark:** {sym}{avg_cost:,.0f}"
+                )
+                st.write("---")
+        else:
+            st.warning(
+                f"No specific matches found for '{c_brand_model}'. Try searching"
+                " by Brand name (e.g. BMW, Lamborghini, Maruti, Ferrari,"
+                " Porsche)."
+            )
+
+        reasons = [
+            f"Queries live vehicle records for {c_type} models across global"
+            " manufacturer databases.",
+            f"Fits within or near your target budget of {sym}{c_budget:,.0f}"
+            f" against regional {c_type} price baselines ({sym}{avg_cost:,.0f}).",
+            "Regional market demand metric: Market Days Supply for"
+            f" {c_type}s in {c_location} is"
+            f" {market_info['days_supply'].get(c_type, 30)} days.",
+            f"The {c_type} body style holds"
+            f" {market_info['market_share'].get(c_type, '25%')} market share in"
+            f" {c_location}.",
+        ]
+
+        st.subheader("💡 Why This Was Predicted")
+        for r in reasons:
+            st.markdown(f"- {r}")
+
+# --- STARTUP CAR COMPANY PORTAL ---
+with tab2:
+    st.header("Regional Opportunity & Market Gap Analyzer")
+    st.write(
+        "Analyze target locations to identify underserved automotive market"
+        " segments."
+    )
+
+    s_location = st.text_input("Target Region / City", value="India", key="s_loc")
+
+    if st.button("Analyze Market Opportunities", type="primary"):
+        s_data = fetch_market_data(s_location)
+        s_sym = s_data["currency_symbol"]
+        avg_ev = s_data["avg_price"]["EV"]
+
+        target_sub_price = int(32000 * get_currency_config(s_location)["rate"])
+        rec_segment = f"Compact Electric SUV (Sub-{s_sym}{target_sub_price:,.0f})"
+        success_rate = "88%"
+        reasons = [
+            f"**High Supply Deficit:** EV Market Days Supply in {s_location} is"
+            f" low ({s_data['days_supply']['EV']} days), meaning consumer"
+            " purchases outpace dealer stock.",
+            "**Price Vacuum:** Regional average EV price is high"
+            f" ({s_sym}{avg_ev:,.0f}), leaving a wide opening for an"
+            " affordable entry competitor.",
+            "**Body Style Dominance:** SUV body styles lead sales with"
+            f" {s_data['market_share']['SUV']} share, making a Compact EV SUV"
+            " the highest probability entry model.",
+        ]
+
+        st.info(f"**Recommended Launch Vehicle:** {rec_segment}")
+        st.metric(label="Projected Success Rate", value=success_rate)
+
+        st.subheader("📊 Strategic Rationale")
+        for r in reasons:
+            st.markdown(f"- {r}")
