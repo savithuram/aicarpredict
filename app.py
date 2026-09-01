@@ -64,23 +64,40 @@ def fetch_cars_from_api(body_type: str, user_input: str = ""):
     headers = {"X-Api-Key": api_key}
 
     clean_input = user_input.strip().lower()
-
-    target_year=2020
+    target_year = 2026
 
     if clean_input:
-        # 1. Try searching by MAKE
+        # 1. Try searching by MAKE with 2026 target year
+        try:
+            res = requests.get(
+                url, headers=headers, params={"make": clean_input, "year": target_year}
+            )
+            if res.status_code == 200 and res.json():
+                return res.json()
+        except Exception:
+            pass
+
+        # Fallback search by MAKE without strict year filter
         try:
             res = requests.get(
                 url, headers=headers, params={"make": clean_input}
             )
             if res.status_code == 200 and res.json():
                 return res.json()
-            elif res.status_code != 200:
-                st.error(f"API Error ({res.status_code}): {res.text}")
-        except Exception as e:
-            st.error(f"Request failed: {e}")
+        except Exception:
+            pass
 
-        # 2. Try searching by MODEL
+        # 2. Try searching by MODEL with 2026 target year
+        try:
+            res = requests.get(
+                url, headers=headers, params={"model": clean_input, "year": target_year}
+            )
+            if res.status_code == 200 and res.json():
+                return res.json()
+        except Exception:
+            pass
+
+        # Fallback search by MODEL without strict year filter
         try:
             res = requests.get(
                 url, headers=headers, params={"model": clean_input}
@@ -90,117 +107,33 @@ def fetch_cars_from_api(body_type: str, user_input: str = ""):
         except Exception:
             pass
 
-    # Fallback brand pool
+    # Fallback brand pool using 2026 target year
     brand_pool = {
         "SUV": [
-            "toyota",
-            "honda",
-            "ford",
-            "chevrolet",
-            "jeep",
-            "nissan",
-            "hyundai",
-            "kia",
-            "subaru",
-            "mazda",
-            "bmw",
-            "mercedes-benz",
-            "audi",
-            "porsche",
-            "land rover",
-            "volvo",
-            "lexus",
-            "acura",
-            "infiniti",
-            "cadillac",
-            "gmc",
-            "lincoln",
-            "dodge",
-            "maruti",
-            "tata",
-            "mahindra",
-            "lamborghini",
-            "ferrari",
-            "bentley",
-            "aston martin",
-            "maserati",
-            "volkswagen",
-            "alfa romeo",
-            "mitsubishi",
+            "toyota", "honda", "ford", "chevrolet", "jeep", "nissan", "hyundai",
+            "kia", "subaru", "mazda", "bmw", "mercedes-benz", "audi", "porsche",
+            "land rover", "volvo", "lexus", "acura", "infiniti", "cadillac",
+            "gmc", "lincoln", "dodge", "maruti", "tata", "mahindra",
+            "lamborghini", "ferrari", "bentley", "aston martin", "maserati",
+            "volkswagen", "alfa romeo", "mitsubishi"
         ],
         "EV": [
-            "tesla",
-            "porsche",
-            "bmw",
-            "audi",
-            "mercedes-benz",
-            "hyundai",
-            "kia",
-            "nissan",
-            "volkswagen",
-            "polestar",
-            "lucid",
-            "rivian",
-            "byd",
-            "ford",
-            "chevrolet",
-            "volvo",
-            "cadillac",
-            "jaguar",
-            "genesis",
-            "fiat",
-            "tata",
+            "tesla", "porsche", "bmw", "audi", "mercedes-benz", "hyundai", "kia",
+            "nissan", "volkswagen", "polestar", "lucid", "rivian", "byd", "ford",
+            "chevrolet", "volvo", "cadillac", "jaguar", "genesis", "fiat", "tata"
         ],
         "Sedan": [
-            "toyota",
-            "honda",
-            "nissan",
-            "hyundai",
-            "kia",
-            "bmw",
-            "mercedes-benz",
-            "audi",
-            "lexus",
-            "volkswagen",
-            "subaru",
-            "mazda",
-            "volvo",
-            "genesis",
-            "cadillac",
-            "jaguar",
-            "alfa romeo",
-            "porsche",
-            "maserati",
-            "bentley",
-            "rolls-royce",
-            "dodge",
-            "chrysler",
-            "maruti",
-            "tata",
-            "aston martin",
+            "toyota", "honda", "nissan", "hyundai", "kia", "bmw",
+            "mercedes-benz", "audi", "lexus", "volkswagen", "subaru", "mazda",
+            "volvo", "genesis", "cadillac", "jaguar", "alfa romeo", "porsche",
+            "maserati", "bentley", "rolls-royce", "dodge", "chrysler", "maruti",
+            "tata", "aston martin"
         ],
         "Hatchback": [
-            "volkswagen",
-            "mini",
-            "honda",
-            "toyota",
-            "maruti",
-            "hyundai",
-            "kia",
-            "ford",
-            "audi",
-            "bmw",
-            "mercedes-benz",
-            "peugeot",
-            "renault",
-            "fiat",
-            "mazda",
-            "nissan",
-            "subaru",
-            "suzuki",
-            "seat",
-            "skoda",
-        ],
+            "volkswagen", "mini", "honda", "toyota", "maruti", "hyundai", "kia",
+            "ford", "audi", "bmw", "mercedes-benz", "peugeot", "renault",
+            "fiat", "mazda", "nissan", "subaru", "suzuki", "seat", "skoda"
+        ]
     }
 
     sampled_makes = brand_pool.get(
@@ -208,6 +141,18 @@ def fetch_cars_from_api(body_type: str, user_input: str = ""):
     )
     random.shuffle(sampled_makes)
 
+    # First attempt: Try fetching 2026 models for sampled makes
+    for make_name in sampled_makes:
+        try:
+            res = requests.get(
+                url, headers=headers, params={"make": make_name, "year": target_year}
+            )
+            if res.status_code == 200 and res.json():
+                return res.json()
+        except Exception:
+            continue
+
+    # Second attempt: Fallback without year filter if 2026 entries are sparse
     for make_name in sampled_makes:
         try:
             res = requests.get(
@@ -292,7 +237,7 @@ with tab1:
             for i, car in enumerate(api_cars[:5], 1):
                 make = car.get("make", "Generic").title()
                 model = car.get("model", "Vehicle").title()
-                year = car.get("year", "2023")
+                year = car.get("year", "2026")
                 transmission = (
                     "Automatic" if car.get("transmission") == "a" else "Manual"
                 )
