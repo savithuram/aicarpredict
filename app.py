@@ -51,7 +51,7 @@ def get_cars(body_type, fuel_type, brand=""):
      params = {
     "year_min": 2023,
     "per_page": 10
-}
+    }
 
 # VehDB requires a base filter.
 # If the user entered a brand, use it.
