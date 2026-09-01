@@ -27,17 +27,13 @@ API_KEY = st.secrets.get(
 )
 
 CARS_API = "https://api.api-ninjas.com/v1/cars"
-COUNTRIES_API = "https://restcountries.com/v3.1/name"
+COUNTRIES_API = "https://api.restcountries.com/countries/v5"
 
 
 # ============================================================
 # HELPER FUNCTIONS
 # ============================================================
 def get_country_data(location):
-    """
-    Gets country information from REST Countries API.
-    """
-
     location = location.strip()
 
     if not location:
@@ -45,32 +41,26 @@ def get_country_data(location):
 
     try:
         response = requests.get(
-            f"{COUNTRIES_API}/{location}",
+            f"{COUNTRIES_API}/names.common/{location}",
             timeout=10
         )
 
         if response.status_code != 200:
             return None
 
-        data = response.json()
+        result = response.json()
 
-        if not isinstance(data, list):
+        data = result.get("data", {})
+
+        countries = data.get("objects", [])
+
+        if not countries:
             return None
 
-        if len(data) == 0:
-            return None
+        country = countries[0]
 
-        country = data[0]
-
-        if not isinstance(country, dict):
-            return None
-
-        name_data = country.get("name", {})
-
-        if not isinstance(name_data, dict):
-            name_data = {}
-
-        name = name_data.get(
+        names = country.get("names", {})
+        name = names.get(
             "common",
             location.title()
         )
@@ -87,29 +77,24 @@ def get_country_data(location):
 
         currencies = country.get(
             "currencies",
-            {}
+            []
         )
 
         currency_code = "USD"
         currency_symbol = "$"
 
-        if isinstance(currencies, dict) and currencies:
+        if currencies:
+            currency = currencies[0]
 
-            currency_code = list(
-                currencies.keys()
-            )[0]
-
-            currency_info = currencies.get(
-                currency_code,
-                {}
+            currency_code = currency.get(
+                "code",
+                "USD"
             )
 
-            if isinstance(currency_info, dict):
-
-                currency_symbol = currency_info.get(
-                    "symbol",
-                    currency_code
-                )
+            currency_symbol = currency.get(
+                "symbol",
+                currency_code
+            )
 
         return {
             "name": name,
@@ -121,7 +106,6 @@ def get_country_data(location):
 
     except Exception:
         return None
-
 # ============================================================
 # CAR API
 # ============================================================
